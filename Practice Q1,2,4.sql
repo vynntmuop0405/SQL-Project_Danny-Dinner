@@ -27,3 +27,21 @@ LEFT JOIN menu b ON a.product_id = b.product_id
 GROUP BY b.product_name
 )
 SELECT TOP 1 * FROM dish_order_times ORDER BY orders DESC
+---- 5.Which item was the most popular for each customer?
+WITH 
+item_count AS (
+SELECT a.customer_id, a.product_id,
+	   COUNT(*) times_order
+FROM sales a
+GROUP BY a.customer_id, a.product_id
+---ORDER BY a.customer_id, times_order DESC
+),
+ranking AS (
+SELECT *,
+	   RANK() OVER(PARTITION BY customer_id ORDER BY times_order DESC) rank_in_order 
+FROM item_count
+)
+SELECT a.*	, b.product_name		
+FROM ranking a
+LEFT JOIN menu b ON a.product_id = b.product_id 
+WHERE rank_in_order = '1'
