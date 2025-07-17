@@ -61,3 +61,18 @@ SELECT a.*, b.product_name
 FROM purchase_after_join a
 LEFT JOIN menu b ON a.product_id = b.product_id
 WHERE time_visit = '1'
+
+---- 7. item was purchased just before the customer became a member?
+WITH
+purchase_after_join AS (
+SELECT a.customer_id, b.join_date,
+	   a.order_date, a.product_id,
+	   DENSE_RANK() OVER(PARTITION BY a.customer_id ORDER BY a.order_date DESC) time_visit
+FROM sales a
+LEFT JOIN members b ON a.customer_id = b.customer_id
+WHERE a.order_date < b.join_date
+)
+SELECT a.*, b.product_name
+FROM purchase_after_join a
+LEFT JOIN menu b ON a.product_id = b.product_id
+WHERE time_visit = '1'
