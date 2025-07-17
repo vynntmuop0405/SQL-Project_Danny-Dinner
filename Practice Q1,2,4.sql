@@ -17,6 +17,7 @@ from sales
 GROUP BY customer_id
 ;
 ---- 3. First item from the menu purchased by custs.
+
 ---- 4. Most purchase item in menu and times it purchased by all customers?
 WITH 
 dish_order_times AS (
@@ -27,6 +28,7 @@ LEFT JOIN menu b ON a.product_id = b.product_id
 GROUP BY b.product_name
 )
 SELECT TOP 1 * FROM dish_order_times ORDER BY orders DESC
+
 ---- 5.Which item was the most popular for each customer?
 WITH 
 item_count AS (
@@ -34,7 +36,6 @@ SELECT a.customer_id, a.product_id,
 	   COUNT(*) times_order
 FROM sales a
 GROUP BY a.customer_id, a.product_id
----ORDER BY a.customer_id, times_order DESC
 ),
 ranking AS (
 SELECT *,
@@ -45,3 +46,18 @@ SELECT a.*	, b.product_name
 FROM ranking a
 LEFT JOIN menu b ON a.product_id = b.product_id 
 WHERE rank_in_order = '1'
+
+---- 6.item was purchased first by the customer after they became a member
+WITH
+purchase_after_join AS (
+SELECT a.customer_id, b.join_date,
+	   a.order_date, a.product_id,
+	   DENSE_RANK() OVER(PARTITION BY a.customer_id ORDER BY a.order_date) time_visit
+FROM sales a
+LEFT JOIN members b ON a.customer_id = b.customer_id
+WHERE a.order_date >= b.join_date
+)
+SELECT a.*, b.product_name
+FROM purchase_after_join a
+LEFT JOIN menu b ON a.product_id = b.product_id
+WHERE time_visit = '1'
