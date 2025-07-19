@@ -98,4 +98,24 @@ SELECT customer_id, SUM(count) total_items, SUM(total_price) total_spent
 FROM total_items
 GROUP BY customer_id
 
----- 9.If each $1 spent equates to 10 points and sushi has a 2x points multiplier - how many points would each customer have?
+---- 9. If each $1 spent equates to 10 points and sushi has a 2x points multiplier - how many points would each customer have?
+WITH 
+point AS (
+SELECT a.*,
+	   CASE WHEN a.product_name <> 'sushi' THEN a.price
+			ELSE a.price*2 END AS point
+FROM menu a ),
+all_promotion AS (
+SELECT a.customer_id, c.product_name,
+	   COUNT(a.product_id) time_order,
+	   COUNT(a.product_id) * d.point AS points
+FROM sales a
+LEFT JOIN members b ON a.customer_id = b.customer_id
+LEFT JOIN menu c ON a.product_id = c.product_id
+LEFT JOIN point d ON d.product_id = a.product_id
+WHERE a.order_date >= b.join_date
+GROUP BY a.customer_id, c.product_name, d.point
+)
+SELECT customer_id, SUM(points) total_point
+FROM all_promotion
+GROUP BY customer_id
