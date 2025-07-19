@@ -76,3 +76,26 @@ SELECT a.*, b.product_name
 FROM purchase_after_join a
 LEFT JOIN menu b ON a.product_id = b.product_id
 WHERE time_visit = '1'
+
+---- 8.total items and amount spent for each member before they became a member?
+WITH
+purchase_before_join AS (
+SELECT a.customer_id, b.join_date,
+	   a.order_date, a.product_id, c.product_name, c.price
+FROM sales a
+LEFT JOIN members b ON a.customer_id = b.customer_id
+LEFT JOIN menu c ON a.product_id = c.product_id
+WHERE a.order_date < b.join_date
+),
+total_items AS (
+SELECT customer_id, product_name, price, 
+	   COUNT(product_name) count,
+	   price * COUNT(product_name) total_price
+FROM purchase_before_join a
+GROUP BY customer_id, product_name, price
+)
+SELECT customer_id, SUM(count) total_items, SUM(total_price) total_spent
+FROM total_items
+GROUP BY customer_id
+
+---- 9.If each $1 spent equates to 10 points and sushi has a 2x points multiplier - how many points would each customer have?
