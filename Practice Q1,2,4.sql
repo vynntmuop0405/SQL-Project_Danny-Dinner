@@ -102,8 +102,8 @@ GROUP BY customer_id
 WITH 
 point AS (
 SELECT a.*,
-	   CASE WHEN a.product_name <> 'sushi' THEN a.price
-			ELSE a.price*2 END AS point
+	   CASE WHEN a.product_name <> 'sushi' THEN a.price*10
+			ELSE a.price*10*2 END AS point
 FROM menu a ),
 all_promotion AS (
 SELECT a.customer_id, c.product_name,
@@ -118,4 +118,30 @@ GROUP BY a.customer_id, c.product_name, d.point
 )
 SELECT customer_id, SUM(points) total_point
 FROM all_promotion
+GROUP BY customer_id
+
+---- In the first week after a customer joins the program (including their join date) they earn 2x points on all items, not just sushi.
+---- How many points do customer A and B have at the end of January?
+WITH 
+point AS (
+SELECT a.*,
+	   CASE WHEN a.product_name <> 'sushi' THEN a.price*10
+			ELSE a.price*10*2 END AS point
+FROM menu a ),
+all_promotion AS (
+SELECT a.customer_id, c.product_name,
+	   b.join_date, a.order_date,
+	   COUNT(a.product_id) time_order,
+	   CASE WHEN a.order_date <= DATEADD(DAY, 7, b.join_date) THEN d.point*2
+			ELSE d.point END AS point
+FROM sales a
+LEFT JOIN members b ON a.customer_id = b.customer_id
+LEFT JOIN menu c ON a.product_id = c.product_id
+LEFT JOIN point d ON d.product_id = a.product_id
+WHERE a.order_date >= b.join_date
+GROUP BY a.customer_id, c.product_name, d.point, b.join_date, a.order_date
+)  ---SELECT * FROM all_promotion
+SELECT customer_id, SUM(point) total_point
+FROM all_promotion
+WHERE order_date <= '2021-01-31'
 GROUP BY customer_id
