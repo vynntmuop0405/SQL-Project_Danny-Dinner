@@ -17,6 +17,22 @@ from sales
 GROUP BY customer_id
 ;
 ---- 3. First item from the menu purchased by custs.
+WITH time_visits AS (
+SELECT DISTINCT customer_id,
+		order_date, product_id,
+		DENSE_RANK() OVER(PARTITION BY customer_id ORDER BY order_date) visit_time
+FROM sales
+)
+SELECT a.customer_id, a.order_date, STRING_AGG(b.product_name,',') product_name
+FROM time_visits a
+LEFT JOIN menu b ON a.product_id=b.product_id
+WHERE visit_time = 1
+GROUP BY a.customer_id, a.order_date
+
+customer_id	order_date	product_name
+A			2021-01-01	sushi,curry
+B			2021-01-01	curry
+C			2021-01-01	ramen
 
 ---- 4. Most purchase item in menu and times it purchased by all customers?
 WITH 
